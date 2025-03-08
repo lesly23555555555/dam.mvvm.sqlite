@@ -1,85 +1,84 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.Maui.Controls;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
+
 using System.Threading.Tasks;
-using dam.mvvm.sqlite.Model;
+using dam.mvvm.sqlite.Models;
 using System.Windows.Input;
 using System.Runtime.CompilerServices;
+using dam.mvvm.sqlite.Services;
+using System.Windows.Input;
 
 namespace dam.mvvm.sqlite.ViewModel
 {
-    class RegistroViewModel : INotifyPropertyChanged
+  public  class RegistroViewModel : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
+        private readonly DatabaseService _databaseService;
 
-        private string usuario;
-        private string password;
-        private string email;
-        private DatabaseContext dbContext;
-
-        public string Usuario
+        public  RegistroViewModel()
         {
-            get => usuario;
+            _databaseService = new DatabaseService();
+            RegisterCommand = new Command(async () => await Register());
+        }
+
+        private string _name;
+        public string Name
+        {
+            get => _name;
             set
             {
-                usuario = value;
-                OnPropertyChanged();
+                _name = value;
+                OnPropertyChanged(nameof(Name));
             }
         }
 
-        public string Password
-        {
-            get => password;
-            set
-            {
-                password = value;
-                OnPropertyChanged();
-            }
-        }
-
+        private string _email;
         public string Email
         {
-            get => email;
+            get => _email;
             set
             {
-                email = value;
-                OnPropertyChanged();
+                _email = value;
+                OnPropertyChanged(nameof(Email));
             }
         }
 
-        public ICommand RegistrarComando { get; }
-        public ICommand NavegarLoginComando { get; }
-
-        public RegistroViewModel()
+        private string _password;
+        public string Password
         {
-            dbContext = new DatabaseContext("usuarios.db3");
-            RegistrarComando = new Command(async () => await Registrar());
-            NavegarLoginComando = new Command(NavegarLogin);
+            get => _password;
+            set
+            {
+                _password = value;
+                OnPropertyChanged(nameof(Password));
+            }
         }
 
-        private async Task Registrar()
+        public ICommand RegisterCommand { get; }
+
+        public async Task Register()
         {
-            if (string.IsNullOrEmpty(Usuario) || string.IsNullOrEmpty(Password) || string.IsNullOrEmpty(Email))
+            if (string.IsNullOrWhiteSpace(Name) || string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
             {
-                await App.Current.MainPage.DisplayAlert("Error", "Todos los campos son obligatorios", "Aceptar");
+                await Application.Current.MainPage.DisplayAlert("Error", "Todos los campos son obligatorios.", "OK");
                 return;
             }
 
-            var usuarioModel = new UsuarioModel { Usuario = Usuario, Password = Password, Email = Email };
-            await dbContext.Guardar(usuarioModel);
-            await App.Current.MainPage.DisplayAlert("Éxito", "Usuario registrado correctamente", "Aceptar");
+            var user = new Usuario { Name = Name, Email = Email, Password = Password };
+            await _databaseService.AddUser(user);
+
+            await Application.Current.MainPage.DisplayAlert("Éxito", "Usuario registrado correctamente.", "OK");
+            await Application.Current.MainPage.Navigation.PopAsync();
         }
 
-        private async void NavegarLogin()
-        {
-            await App.Current.MainPage.Navigation.PushAsync(new LoginPage());
-        }
-
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        internal void RegistrarUsuario()
+        {
+            throw new NotImplementedException();
         }
     }
 }
